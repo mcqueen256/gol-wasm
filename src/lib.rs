@@ -174,7 +174,7 @@ fn construct_line(line: Vec<RleElement>, width: u32) -> Vec<Cell> {
 }
 
 fn load_spaceships(width: u32, height: u32) -> Vec<Cell> {
-    let raw_contents = include_str!("../../spaceshiptypes.rle");
+    let raw_contents = include_str!("../spaceships.rle");
 
     let xy_line = raw_contents
         .lines()
