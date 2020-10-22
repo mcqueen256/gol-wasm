@@ -127,6 +127,52 @@ impl fmt::Display for Universe {
 
 use itertools::Itertools;
 
+#[derive(Eq, PartialEq, Debug)]
+enum RleCharacter {
+    Number,
+    NewLine,
+    Dead,
+    Alive,
+    End,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum RleToken {
+    Number(u32),
+    NewLine,
+    Dead,
+    Alive,
+    End,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum RleElement {
+    NewLine(u32),
+    Dead(u32),
+    Alive(u32),
+    End,
+}
+
+fn construct_line(line: Vec<RleElement>, width: u32) -> Vec<Cell> {
+    let width = width as usize;
+    let mut line = line
+        .into_iter()
+        .map(|element| match element {
+            RleElement::Alive(x) => vec![ Cell::Alive; x as usize],
+            RleElement::Dead(x) => vec![ Cell::Dead; x as usize],
+            _ => panic!("invalid line"),
+        })
+        .flatten()
+        .collect::<Vec<Cell>>();
+    if line.len() < width {
+        let missing_cells = vec![ Cell::Dead; width as usize - line.len()];
+        line.extend(missing_cells);
+        line
+    } else {
+        line.into_iter().take(width).collect()
+    }
+}
+
 fn load_spaceships(width: u32, height: u32) -> Vec<Cell> {
     let raw_contents = include_str!("../../spaceshiptypes.rle");
 
@@ -139,113 +185,106 @@ fn load_spaceships(width: u32, height: u32) -> Vec<Cell> {
     let width_from_file: u32 = x.parse().expect(&format!("x (`{}`) is not a number", x));
     let y: String = xy_line.chars().skip(13).take(3).collect();
     let height_from_file: u32 = y.parse().expect(&format!("y (`{}`) is not a number", y));
-    unsafe {
-        log!("width_from_file: {}", width_from_file);
-        log!("height_from_file: {}", height_from_file);
-        log!("width: {}", width);
-        log!("height: {}", height);
-    }
+    // unsafe {
+    //     log!("width_from_file: {}", width_from_file);
+    //     log!("height_from_file: {}", height_from_file);
+    //     log!("width: {}", width);
+    //     log!("height: {}", height);
+    // }
 
     let width_of_grid = if width > width_from_file { width } else { width_from_file };
     let height_of_grid = if height > height_from_file { height } else { height_from_file };
     println!("width: {}, height: {}", width, height);
 
-    #[derive(Eq, PartialEq, Debug)]
-    enum RleGroups {
-        Number,
-        Dead,
-        Alive,
-    }
+    
 
-    #[derive(Debug, Copy, Clone)]
-    enum Rle {
-        Number(u32),
-        Dead,
-        Alive,
-    }
-
-    let coordinates_string: String = raw_contents
+    // let coordinates_string: String = raw_contents
+    let mut stream = raw_contents
         .lines()
         .skip(2)
         .flat_map(|line| line.chars())
-        .collect::<String>();
-    let token_stream: Vec<Rle> = coordinates_string
-        .split("$")
-        .map(|line| {
-            let unprocessed_groups = line
-                .chars()
-                .filter(|&c| c != '!')
-                // .map(|c| c.clone())
-                .group_by(|c| match *c {
-                    'b' => RleGroups::Dead,
-                    'o' => RleGroups::Alive,
-                     _  => RleGroups::Number,
-                });
-            let token: Vec<Rle> = unprocessed_groups
-                .into_iter()
-                .map(|(key, group)| {
-                    match key {
-                        RleGroups::Dead => Rle::Dead,
-                        RleGroups::Alive => Rle::Alive,
-                        RleGroups::Number => Rle::Number(group.collect::<String>().parse::<u32>().unwrap())
-                    }
-                }).collect();
-                let tokenized_line_uncomplete: Vec<_> = token
-                    .iter()
-                    .batching(|it| {
-                        match it.next() {
-                            None => None,
-                            Some(Rle::Dead) => Some(vec![Rle::Dead]),
-                            Some(Rle::Alive) => Some(vec![Rle::Alive]),
-                            Some(Rle::Number(x)) => {
-                                match it.next() {
-                                    None => None,
-                                    Some(Rle::Dead) => Some(vec![Rle::Dead; *x as usize]),
-                                    Some(Rle::Alive) => Some(vec![Rle::Alive; *x as usize]),
-                                    Some(Rle::Number(_)) => panic!("not suppose to be here"),
-                                }
-                            } 
-                        }
-                    })
-                    .flatten()
-                    .collect();
-                tokenized_line_uncomplete
-
+        .collect::<Vec<char>>()
+        .into_iter()
+        // Identify adjacent tokens and group them together
+        .group_by(|c| match *c {
+            'b' => RleCharacter::Dead,
+            'o' => RleCharacter::Alive,
+            '$' => RleCharacter::NewLine,
+            '!' => RleCharacter::End,
+             _  => RleCharacter::Number,
         })
-        .map(|incomplete_tokened_line| {
-            let mut complete_tokened_line: Vec<Rle> = Vec::new();
-            if width >= width_from_file {
-                let missing_tokens = vec![Rle::Dead; width as usize - incomplete_tokened_line.len()];
-                complete_tokened_line.extend(incomplete_tokened_line.iter());
-                complete_tokened_line.extend(missing_tokens.iter());
-            } else {
-                if incomplete_tokened_line.len() < width as usize {
-                    let missing_tokens = vec![Rle::Dead; width as usize - incomplete_tokened_line.len()];
-                    complete_tokened_line.extend(incomplete_tokened_line.iter());
-                    complete_tokened_line.extend(missing_tokens.iter());
-                } else {
-                    complete_tokened_line.extend(incomplete_tokened_line.iter().take(width as usize));
+        .into_iter()
+        // Convert characters into tokens (particularly Number)
+        .map(|(key, group)| {
+            match key {
+                RleCharacter::Dead => RleToken::Dead,
+                RleCharacter::Alive => RleToken::Alive,
+                RleCharacter::NewLine => RleToken::NewLine,
+                RleCharacter::End => RleToken::End,
+                RleCharacter::Number => RleToken::Number(group.collect::<String>().parse::<u32>().unwrap()),
+            }
+        })
+        // A super simple parser
+        .batching(|it| {
+            match it.next() {
+                None => None,
+                Some(RleToken::Dead) => Some(RleElement::Dead(1)),
+                Some(RleToken::Alive) => Some(RleElement::Alive(1)),
+                Some(RleToken::NewLine) => Some(RleElement::NewLine(1)),
+                Some(RleToken::End) => Some(RleElement::End),
+                Some(RleToken::Number(x)) => {
+                    match it.next() {
+                        None => None,
+                        Some(RleToken::Dead) => Some(RleElement::Dead(x)),
+                        Some(RleToken::Alive) => Some(RleElement::Alive(x)),
+                        Some(RleToken::NewLine) => Some(RleElement::NewLine(x)),
+                        Some(RleToken::Number(_)) => panic!("have a number after a number."),
+                        Some(RleToken::End) => panic!("cannot have multiple ends"),
+                    }
                 }
             }
-            complete_tokened_line
+        })
+        // Split up by lines
+        .collect::<Vec<RleElement>>()
+        .into_iter()
+        .group_by(|key| match key {
+            RleElement::NewLine(_) | RleElement::End => false,
+            _ => true
+        })
+        .into_iter()
+        // Oranise into (line, newline_or_end)
+        .map(|(_, group)| {
+            group.collect::<Vec<RleElement>>()
+        })
+        .chunks(2)
+        .into_iter()
+        .map(|mut it| {
+            let line = it.next().expect("No next iterator");
+            let new_line_or_end = it
+                .next()
+                .expect("No next iterator")
+                .get(0)
+                .expect("Missing newline element")
+                .clone();
+            (line, new_line_or_end)
+        })
+        // Convert from RleElements to Vec<Cell>
+        .map(|(line, newline_or_end): (Vec<RleElement> ,RleElement)| {
+            let complete_line = construct_line(line, width);
+            let newlines = if let RleElement::NewLine(x) = newline_or_end {
+                vec![ Cell::Dead; ((x-1) * width) as usize]
+            } else { vec![] };
+            let mut section = Vec::new();
+            section.extend(complete_line);
+            section.extend(newlines);
+            section
         })
         .flatten()
-        .collect();
-    let array_size = width as usize * height as usize;
-    let mut token_stream: Vec<Rle> = token_stream
-        .into_iter()
-        .take(array_size)
-        .collect();
-    if token_stream.len() < array_size {
-        let missing_tokens = vec![Rle::Dead; array_size - token_stream.len()];
-        token_stream.extend(missing_tokens.iter());
-    }
-    token_stream
-        .iter()
-        .map(|cell| match cell {
-            Rle::Dead => Cell::Dead,
-            Rle::Alive => Cell::Alive,
-            Rle::Number(_) => panic!("No numbers should be here"),
-        })
-        .collect()
+        // Truncate
+        .take((width * height) as usize)
+        // Expand
+        .collect::<Vec<Cell>>()
+    ;
+    stream.extend(vec![ Cell::Dead; (width * height) as usize - stream.len()]);
+    stream
 }
