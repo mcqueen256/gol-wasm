@@ -1,0 +1,3 @@
+[submodule "gol-wasm"]
+	path = gol-wasm
+	url = https://github.com/mcqueen256/gol-wasm.git
