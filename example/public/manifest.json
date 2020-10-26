@@ -1,6 +1,6 @@
 {
-  "short_name": "gol-react",
-  "name": "gol-react",
+  "short_name": "foo",
+  "name": "foo",
   "icons": [
     {
       "src": "favicon.ico",
