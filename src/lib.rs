@@ -4,6 +4,8 @@ use wasm_bindgen::prelude::*;
 
 use getrandom;
 
+use js_sys;
+
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
 #[cfg(feature = "wee_alloc")]
@@ -17,6 +19,11 @@ macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
+}
+
+#[wasm_bindgen]
+pub fn name() -> js_sys::JsString {
+    "Nic!".into()
 }
 
 
