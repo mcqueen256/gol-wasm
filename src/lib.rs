@@ -100,8 +100,8 @@ impl Universe {
         }
     }
 
-    pub fn render(&self) -> String {
-        self.to_string()
+    pub fn render(&self) -> js_sys::JsString {
+        self.to_string().into()
     }
 
     pub fn width(&self) -> u32 {
@@ -114,6 +114,10 @@ impl Universe {
 
     pub fn cells(&self) -> *const Cell {
         self.cells.as_ptr()
+    }
+
+    pub fn set_canvas(&self, canvas: web_sys::HtmlCanvasElement) {
+        log!("{:?}", canvas);
     }
 }
 
