@@ -206,7 +206,49 @@ impl Universe {
 
             log!("offsets x={:.2}, y={:.2}", x_offset, y_offset);
 
+            // draw border
             context.begin_path();
+            context.set_stroke_style(&JsValue::from("purple"));
+            context.set_line_width(border_width);
+            context.rect(
+                x_offset - border_width / 2.0,
+                y_offset - border_width / 2.0,
+                visible_grid_width + border_width,
+                visible_grid_height + border_width
+            );
+            context.stroke();
+
+            // draw dividing lines
+            context.begin_path();
+            context.set_stroke_style(&JsValue::from("green"));
+            context.set_line_width(line_width);
+            for i in 1..(self.visible_columns) {
+                context.move_to(
+                    x_offset + line_width / 2.0 + i as f64 * (cell_size + line_width) - line_width,
+                    y_offset,
+                );
+                context.line_to(
+                    x_offset + line_width / 2.0 + i as f64 * (cell_size + line_width) - line_width,
+                    y_offset + visible_grid_height,
+                );
+                
+            }
+            for i in 1..(self.visible_rows) {
+                context.move_to(
+                    x_offset,
+                    y_offset + line_width / 2.0 + i as f64 * (cell_size + line_width) - line_width,
+                );
+                context.line_to(
+                    x_offset + visible_grid_width,
+                    y_offset + line_width / 2.0 + i as f64 * (cell_size + line_width) - line_width,
+                );
+                
+            }
+            context.stroke();
+
+            // draw cells
+            context.begin_path();
+            context.set_fill_style(&JsValue::from("red"));
             for col in 0..self.visible_columns {
                 for row in 0..self.visible_rows {
                     context.fill_rect(

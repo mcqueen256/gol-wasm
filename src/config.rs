@@ -66,11 +66,11 @@ impl UniverseConfig {
         Self {
             input: UniverseInput::Random,
             padding: DEFAULT_PADDING,
-            cell_size: 5,
+            cell_size: 6,
             override_size: None,
             edge_rule: EdgeRule::Wrap,
             lines_enabled: true,
-            line_width: 2,
+            line_width: 3,
             border_width: 4,
             allow_overlap: false
         }
