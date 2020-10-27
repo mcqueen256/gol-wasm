@@ -56,18 +56,18 @@ impl Universe {
         let cell_width = self.config.cell_size;
         let cell_height = self.config.cell_size;
 
-        let visible_columns = if self.config.allow_overlap {
-            (canvas_width + line_width + 2 * border_width) / (cell_width + line_width)
+        let visible_columns = if self.config.allow_overflow {
+            (canvas_width + line_width) / (cell_width + line_width)
         } else {
-            let columns = (canvas_width + line_width + 2 * border_width) as f64 / (cell_width + line_width) as f64;
+            let columns = (canvas_width + line_width) as f64 / (cell_width + line_width) as f64;
             columns.ceil() as u32
         };
         log!("visible_columns: {}", visible_columns);
 
-        let visible_rows = if self.config.allow_overlap {
-            (canvas_height + line_width + 2 * border_width) / (cell_height + line_width)
+        let visible_rows = if self.config.allow_overflow {
+            (canvas_height + line_width) / (cell_height + line_width)
         } else {
-            let rows = (canvas_height + line_width + 2 * border_width) as f64 / (cell_height + line_width) as f64;
+            let rows = (canvas_height + line_width) as f64 / (cell_height + line_width) as f64;
             rows.ceil() as u32
         };
         log!("visible_rows: {}", visible_rows);
@@ -78,6 +78,10 @@ impl Universe {
             cols: visible_columns,
         }
     }
+
+    // fn visible_grid_width(&self) -> u32 {
+
+    // }
 
     /// Called when a canvas is available
     fn build(&mut self) {
@@ -208,7 +212,7 @@ impl Universe {
 
             // draw border
             context.begin_path();
-            context.set_stroke_style(&JsValue::from("purple"));
+            context.set_stroke_style(&JsValue::from(self.config.get_line_color()));
             context.set_line_width(border_width);
             context.rect(
                 x_offset - border_width / 2.0,
@@ -218,9 +222,15 @@ impl Universe {
             );
             context.stroke();
 
+            if self.config.allow_overflow {
+
+            } else {
+
+            }
+
             // draw dividing lines
             context.begin_path();
-            context.set_stroke_style(&JsValue::from("green"));
+            context.set_stroke_style(&JsValue::from(self.config.get_line_color()));
             context.set_line_width(line_width);
             for i in 1..(self.visible_columns) {
                 context.move_to(
@@ -248,7 +258,7 @@ impl Universe {
 
             // draw cells
             context.begin_path();
-            context.set_fill_style(&JsValue::from("red"));
+            context.set_fill_style(&JsValue::from(self.config.get_cell_alive_color()));
             for col in 0..self.visible_columns {
                 for row in 0..self.visible_rows {
                     context.fill_rect(

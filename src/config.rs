@@ -27,6 +27,10 @@ pub enum EdgeRule {
 pub struct OverrideSize(pub u32,pub u32);
 
 
+
+#[derive(Clone, Debug)]
+pub struct AString(pub String);
+
 #[wasm_bindgen]
 pub struct UniverseConfig {
     input: UniverseInput,
@@ -37,7 +41,10 @@ pub struct UniverseConfig {
     pub lines_enabled: bool,
     pub line_width: u32,
     pub border_width: u32,
-    pub allow_overlap: bool,
+    pub allow_overflow: bool,
+    line_color: String,
+    cell_alive_color: String,
+    cell_dead_color: String,
 }
 
 impl UniverseConfig {
@@ -52,6 +59,17 @@ impl UniverseConfig {
     // pub fn get_override_size(&self) -> Option<(u32, u32)> {
     //     self.override_size
     // }
+
+
+    pub fn get_line_color(&self) -> String {
+        self.line_color.clone()
+    }
+    pub fn get_cell_alive_color(&self) -> String {
+        self.cell_alive_color.clone()
+    }
+    pub fn get_cell_dead_color(&self) -> String {
+        self.cell_dead_color.clone()
+    }
 }
 
 #[wasm_bindgen]
@@ -64,7 +82,7 @@ impl UniverseConfig {
     /// ```
     pub fn new() -> Self {
         Self {
-            input: UniverseInput::Random,
+            input: UniverseInput::RleString(String::from("this")),
             padding: DEFAULT_PADDING,
             cell_size: 6,
             override_size: None,
@@ -72,8 +90,27 @@ impl UniverseConfig {
             lines_enabled: true,
             line_width: 3,
             border_width: 4,
-            allow_overlap: false
+            allow_overflow: false,
+
+            line_color: String::from("white"),
+            cell_alive_color: String::from("black"),
+            cell_dead_color: String::from("white"),
         }
+    }
+
+    pub fn set_line_color(mut self, color: &str) -> Self {
+        self.line_color = String::from(color);
+        self
+    }
+
+    pub fn set_cell_alive_color(mut self, color: &str) -> Self {
+        self.cell_alive_color = String::from(color);
+        self
+    }
+
+    pub fn set_cell_dead_color(mut self, color: &str) -> Self {
+        self.cell_dead_color = String::from(color);
+        self
     }
 
     pub fn set_override_size(mut self, width: u32, height: u32) -> Self {
@@ -85,3 +122,4 @@ impl UniverseConfig {
         universe::Universe::from(self)
     }
 }
+
