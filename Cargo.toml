@@ -44,6 +44,7 @@ features = [
   'CanvasRenderingContext2d',
   'Document',
   'Element',
+  'DomTokenList',
   'HtmlCanvasElement',
   'Window',
 ]
