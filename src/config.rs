@@ -7,7 +7,7 @@ const DEFAULT_CELL_SIZE: u32 = 3;
 
 /// The input data from which the universe will be constructed with. 
 #[derive(Clone, Debug)]
-enum UniverseInput {
+pub enum UniverseInput {
     Random,
     RleString(String),
 }
@@ -23,21 +23,17 @@ pub enum EdgeRule {
 }
 
 #[wasm_bindgen]
-#[derive(Clone, Copy, Debug)]
-pub struct OverrideSize(pub u32,pub u32);
-
-
-
-#[derive(Clone, Debug)]
-pub struct AString(pub String);
-
-#[wasm_bindgen]
 pub struct UniverseConfig {
+    // construction parameters
     input: UniverseInput,
-    pub padding: u32,
-    pub cell_size: u32,
-    pub override_size: Option<OverrideSize>,
+    padding: u32,
+    cell_size: u32,
+    override_size: Option<(u32, u32)>,
+
+    // behaviour
     edge_rule: EdgeRule,
+
+    // styling
     pub lines_enabled: bool,
     pub line_width: u32,
     pub border_width: u32,
@@ -48,17 +44,21 @@ pub struct UniverseConfig {
 }
 
 impl UniverseConfig {
-    // pub fn get_input(&self) -> UniverseInput {
-    //     self.input.clone()
-    // }
+    pub fn get_input(&self) -> UniverseInput {
+        self.input.clone()
+    }
 
     pub fn get_padding(&self) -> u32 {
         self.padding
     }
 
-    // pub fn get_override_size(&self) -> Option<(u32, u32)> {
-    //     self.override_size
-    // }
+    pub fn get_cell_size(&self) -> u32 {
+        self.cell_size
+    }
+
+    pub fn get_override_size(&self) -> Option<(u32, u32)> {
+        self.override_size
+    }
 
 
     pub fn get_line_color(&self) -> String {
@@ -98,27 +98,51 @@ impl UniverseConfig {
         }
     }
 
+    /// Create a universe grid populated at random.
+    pub fn set_random_input(mut self) -> Self {
+        self.input = UniverseInput::Random;
+        self
+    }
+
+    /// Add additional cells to the outside of the universe. If the absolute
+    /// size is specified, the padding will added to the outside of the size.
+    pub fn set_padding(mut self, padding: u32) -> Self {
+        self.padding = padding;
+        self
+    }
+
+    /// Set the color of the lines between cells. The color is given as string
+    /// that is passed to javascript.
+    ///   e.g. color = "red" or color = "#FF0000"
     pub fn set_line_color(mut self, color: &str) -> Self {
         self.line_color = String::from(color);
         self
     }
 
+    /// Set the color of the cells when they are alive. The color is given as
+    /// string that is passed to javascript.
+    ///   e.g. color = "red" or color = "#FF0000"
     pub fn set_cell_alive_color(mut self, color: &str) -> Self {
         self.cell_alive_color = String::from(color);
         self
     }
 
+    /// Set the color of the cells when they are dead. The color is given as
+    /// string that is passed to javascript.
+    ///   e.g. color = "red" or color = "#FF0000"
     pub fn set_cell_dead_color(mut self, color: &str) -> Self {
         self.cell_dead_color = String::from(color);
         self
     }
 
+    /// If used, this overrides the universe size to the specified parameters.
     pub fn set_override_size(mut self, width: u32, height: u32) -> Self {
-        self.override_size = Some(OverrideSize(width, height));
+        self.override_size = Some((width, height));
         self
     }
 
-    pub fn configure(self) -> universe::Universe {
+    /// Construct a universe from a configuration.
+    pub fn construct(self) -> universe::Universe {
         universe::Universe::from(self)
     }
 }

@@ -55,8 +55,8 @@ impl Universe {
         let canvas_width = self.canvas.as_ref().unwrap().width();
         let canvas_height = self.canvas.as_ref().unwrap().height();
         let line_width = self.config.border_width;
-        let cell_width = self.config.cell_size;
-        let cell_height = self.config.cell_size;
+        let cell_width = self.config.get_cell_size();
+        let cell_height = self.config.get_cell_size();
 
         let visible_columns = if self.config.allow_overflow {
             (canvas_width + line_width) / (cell_width + line_width)
@@ -92,9 +92,9 @@ impl Universe {
         self.visible_rows = row_col_count.rows;
         self.visible_columns = row_col_count.cols;
 
-        let padding = self.config.padding;
+        let padding = self.config.get_padding();
 
-        if let Some(config::OverrideSize(w, h)) = self.config.override_size {
+        if let Some((w, h)) = self.config.get_override_size() {
             self.width = w + 2 * padding;
             self.height = h + 2 * padding;
             if self.width < self.visible_columns {
@@ -231,7 +231,7 @@ impl Universe {
             let vis_row_count = self.visible_rows as f64;
             let line_width = self.config.line_width as f64;
             let border_width = self.config.border_width as f64;
-            let cell_size = self.config.cell_size as f64;
+            let cell_size = self.config.get_cell_size() as f64;
 
 
             let visible_grid_width = vis_col_count * (cell_size + line_width) - line_width;
