@@ -5,6 +5,7 @@ use crate::rle_loader;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys;
+use getrandom;
 
 #[wasm_bindgen]
 #[repr(u8)]
@@ -23,6 +24,8 @@ pub struct Universe {
     config: config::UniverseConfig,
     visible_rows: u32,
     visible_columns: u32,
+    visible_row_start_position: u32,
+    visible_column_start_position: u32,
 }
 
 /// Keep track of count of rows and columns
@@ -52,7 +55,6 @@ impl Universe {
         let canvas_width = self.canvas.as_ref().unwrap().width();
         let canvas_height = self.canvas.as_ref().unwrap().height();
         let line_width = self.config.border_width;
-        let border_width = self.config.border_width;
         let cell_width = self.config.cell_size;
         let cell_height = self.config.cell_size;
 
@@ -105,8 +107,38 @@ impl Universe {
         } else {
         }
 
-        self.cells = vec![Cell::Dead; (self.width * self.height) as usize];
+
+        self.visible_row_start_position = (self.height - self.visible_rows) / 2;
+        self.visible_column_start_position = (self.width - self.visible_columns) / 2;
+
+        // Generate random cells
+        let mut rand_cells = vec![0u8; (self.width * self.height) as usize];
+        getrandom::getrandom(&mut rand_cells[..]).expect("random cell generation failed");
+        self.cells = rand_cells.into_iter().map(|cell| if cell%2==0 {Cell::Dead} else {Cell::Alive}).collect();
+
+
+        // self.cells = vec![Cell::Dead; (self.width * self.height) as usize];
         // let cells = rle_loader::load_spaceships(self.width, self.height);
+    }
+
+    /// Check if the cell is within the visibility bounding box.
+    fn is_visible(&self, row: u32, col: u32) -> bool {
+        let row_lower = self.visible_row_start_position;
+        let row_upper = row_lower + self.visible_rows; // up to but not including
+        let col_lower = self.visible_column_start_position;
+        let col_upper = col_lower + self.visible_columns; // up to but not including
+        // log!("row_lower = {}", row_lower);
+        // log!("row_upper = {}", row_upper);
+        // log!("col_lower = {}", col_lower);
+        // log!("col_upper = {}", col_upper);
+        // log!("row = {}", row);
+        // log!("col = {}", col);
+
+        (row_lower <= row && row < row_upper) && (col_lower <= col && col < col_upper)
+    }
+
+    fn translate_to_visible_row_col(&self, row: u32, col:u32) -> (u32, u32) {
+        (row - self.visible_row_start_position, col - self.visible_column_start_position)
     }
 
     fn get_index(&self, row: u32, column: u32) -> usize {
@@ -148,6 +180,8 @@ impl Universe {
             cells: vec![],
             visible_rows: 0,
             visible_columns: 0,
+            visible_row_start_position: 0,
+            visible_column_start_position: 0,
         }
     }
 
@@ -161,6 +195,8 @@ impl Universe {
             cells: vec![],
             visible_columns: 0,
             visible_rows: 0,
+            visible_row_start_position: 0,
+            visible_column_start_position: 0,
         }
     }
     
@@ -201,14 +237,14 @@ impl Universe {
             let visible_grid_width = vis_col_count * (cell_size + line_width) - line_width;
             let visible_grid_height = vis_row_count * (cell_size + line_width) - line_width;
 
-            log!("vis_gid_wid {:.2}", visible_grid_width);
-            log!("vis_gid_hei {:.2}", visible_grid_height);
+            // log!("vis_gid_wid {:.2}", visible_grid_width);
+            // log!("vis_gid_hei {:.2}", visible_grid_height);
 
             // calculate offsets
             let x_offset: f64  = ((canvas.width() as f64 - visible_grid_width) / 2.0).floor();
             let y_offset: f64  = ((canvas.height() as f64 - visible_grid_height) / 2.0).floor();
 
-            log!("offsets x={:.2}, y={:.2}", x_offset, y_offset);
+            // log!("offsets x={:.2}, y={:.2}", x_offset, y_offset);
 
             // draw border
             context.begin_path();
@@ -256,11 +292,55 @@ impl Universe {
             }
             context.stroke();
 
-            // draw cells
+            // // draw cells
+            // context.begin_path();
+            // context.set_fill_style(&JsValue::from(self.config.get_cell_alive_color()));
+            // for col in 0..self.visible_columns {
+            //     for row in 0..self.visible_rows {
+            //         context.fill_rect(
+            //             x_offset + col as f64 * (cell_size + line_width),
+            //             y_offset + row as f64 * (cell_size + line_width),
+            //             cell_size,
+            //             cell_size
+            //         );
+            //     }
+            // }
+            // context.stroke();
+
+            // draw all dead cells
+            context.begin_path();
+            context.set_fill_style(&JsValue::from(self.config.get_cell_dead_color()));
+            for col in 0..self.width {
+                for row in 0..self.height {
+                    if ! self.is_visible(row, col) {
+                        continue;
+                    }
+                    if *self.cells.get(self.get_index(row, col)).unwrap() == Cell::Alive {
+                        continue;
+                    }
+                    let (row, col) = self.translate_to_visible_row_col(row, col);
+                    context.fill_rect(
+                        x_offset + col as f64 * (cell_size + line_width),
+                        y_offset + row as f64 * (cell_size + line_width),
+                        cell_size,
+                        cell_size
+                    );
+                }
+            }
+            context.stroke();
+
+            // draw all alive cells
             context.begin_path();
             context.set_fill_style(&JsValue::from(self.config.get_cell_alive_color()));
-            for col in 0..self.visible_columns {
-                for row in 0..self.visible_rows {
+            for col in 0..self.width {
+                for row in 0..self.height {
+                    if ! self.is_visible(row, col) {
+                        continue;
+                    }
+                    if *self.cells.get(self.get_index(row, col)).unwrap() == Cell::Dead {
+                        continue;
+                    }
+                    let (row, col) = self.translate_to_visible_row_col(row, col);
                     context.fill_rect(
                         x_offset + col as f64 * (cell_size + line_width),
                         y_offset + row as f64 * (cell_size + line_width),

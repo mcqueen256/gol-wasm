@@ -52,9 +52,9 @@ impl UniverseConfig {
     //     self.input.clone()
     // }
 
-    // pub fn get_padding(&self) -> u32 {
-    //     self.padding
-    // }
+    pub fn get_padding(&self) -> u32 {
+        self.padding
+    }
 
     // pub fn get_override_size(&self) -> Option<(u32, u32)> {
     //     self.override_size
@@ -84,11 +84,11 @@ impl UniverseConfig {
         Self {
             input: UniverseInput::RleString(String::from("this")),
             padding: DEFAULT_PADDING,
-            cell_size: 6,
+            cell_size: 10,
             override_size: None,
             edge_rule: EdgeRule::Wrap,
             lines_enabled: true,
-            line_width: 3,
+            line_width: 2,
             border_width: 4,
             allow_overflow: false,
 

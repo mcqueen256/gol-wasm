@@ -1,8 +1,10 @@
 #[macro_use]
 mod utils;
 mod rle_loader;
+mod drawer;
 pub mod config;
 pub mod universe;
+
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
