@@ -21,6 +21,7 @@ pub struct Universe {
     height: u32,
     cells: Vec<Cell>,
     canvas: Option<web_sys::HtmlCanvasElement>,
+    canvas_cell:Option<web_sys::HtmlCanvasElement>,
     config: config::UniverseConfig,
     visible_rows: u32,
     visible_columns: u32,

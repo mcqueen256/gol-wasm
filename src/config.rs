@@ -3,23 +3,13 @@ use crate::universe;
 use wasm_bindgen::prelude::*;
 
 const DEFAULT_PADDING: u32 = 0;
-const DEFAULT_CELL_SIZE: u32 = 3;
+const DEFAULT_CELL_SIZE: u32 = 10;
 
 /// The input data from which the universe will be constructed with. 
 #[derive(Clone, Debug)]
 pub enum UniverseInput {
     Random,
     RleString(String),
-}
-
-/// Defines what happens at the edge of the grid. When `EdgeRule::Wrap` is set,
-/// a request for a cell beyond the edge will wrap around to the other side.
-/// Otherwise, `EdgeRule::Truncate` is set and cells at the beyond the edge are
-/// terminated.
-#[wasm_bindgen]
-pub enum EdgeRule {
-    Wrap,
-    Truncate,
 }
 
 #[wasm_bindgen]
@@ -29,9 +19,6 @@ pub struct UniverseConfig {
     padding: u32,
     cell_size: u32,
     override_size: Option<(u32, u32)>,
-
-    // behaviour
-    edge_rule: EdgeRule,
 
     // styling
     pub lines_enabled: bool,
@@ -84,9 +71,8 @@ impl UniverseConfig {
         Self {
             input: UniverseInput::RleString(String::from("this")),
             padding: DEFAULT_PADDING,
-            cell_size: 10,
+            cell_size: DEFAULT_CELL_SIZE,
             override_size: None,
-            edge_rule: EdgeRule::Wrap,
             lines_enabled: true,
             line_width: 2,
             border_width: 4,

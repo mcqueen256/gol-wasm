@@ -1,7 +1,6 @@
 #[macro_use]
 mod utils;
 mod rle_loader;
-mod drawer;
 pub mod config;
 pub mod universe;
 
